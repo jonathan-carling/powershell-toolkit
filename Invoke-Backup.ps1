@@ -1,0 +1,64 @@
+<#
+.SYNOPSIS
+    Copies files and directories from a source to a destination using Robocopy.
+
+.DESCRIPTION
+    This script wraps Robocopy with standard PowerShell parameter handling.
+    It preserves file attributes, timestamps, ACLs, and owner information.
+    Auditing (SACL) is intentionally excluded to avoid privilege requirements.
+
+.PARAMETER Source
+    The source directory to copy from.
+
+.PARAMETER Destination
+    The destination directory to copy to.
+
+.EXAMPLE
+    ./Invoke-Backup.ps1 -Source "C:\Data" -Destination "D:\Backup"
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]$Source,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]$Destination
+)
+
+# Validate source
+if (-not (Test-Path -Path $Source)) {
+    throw "Source path does not exist: $Source"
+}
+
+# Ensure destination exists
+if (-not (Test-Path -Path $Destination)) {
+    Write-Verbose "Destination does not exist. Creating: $Destination"
+    New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+}
+
+# Robocopy arguments
+$robocopyArgs = @(
+    "`"$Source`""
+    "`"$Destination`""
+    "/E"             # Copy subdirectories including empty ones
+    "/COPY:DATSO"    # Copy everything except auditing info (avoids privilege issues)
+    "/R:3"           # Retry 3 times
+    "/W:2"           # Wait 2 seconds between retries
+)
+
+Write-Verbose "Running Robocopy with arguments: $($robocopyArgs -join ' ')"
+
+# Invoke Robocopy
+$process = Start-Process -FilePath "robocopy.exe" -ArgumentList $robocopyArgs `
+    -NoNewWindow -Wait -PassThru
+
+# Normalise Robocopy exit codes
+if ($process.ExitCode -le 7) {
+    Write-Host "Backup completed successfully. Robocopy exit code: $($process.ExitCode)"
+}
+else {
+    throw "Robocopy reported a failure. Exit code: $($process.ExitCode)"
+}
