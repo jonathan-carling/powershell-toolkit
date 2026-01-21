@@ -13,6 +13,10 @@
 .PARAMETER Destination
     The destination directory to copy to.
 
+.PARAMETER LogPath
+    Optional path to a log file. If not provided, a timestamped log file
+    will be created in the user's TEMP directory.
+
 .EXAMPLE
     ./Invoke-Backup.ps1 -Source "C:\Data" -Destination "D:\Backup"
 #>
@@ -26,6 +30,9 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]$Destination
+
+    [Parameter()]
+    [string]$LogPath = "$(Join-Path $env:TEMP "Backup-$(Get-Date -Format yyyyMMdd_HHmmss).log")"
 )
 
 # Validate source
@@ -43,10 +50,12 @@ if (-not (Test-Path -Path $Destination)) {
 $robocopyArgs = @(
     "`"$Source`""
     "`"$Destination`""
-    "/E"             # Copy subdirectories including empty ones
-    "/COPY:DATSO"    # Copy everything except auditing info (avoids privilege issues)
-    "/R:3"           # Retry 3 times
-    "/W:2"           # Wait 2 seconds between retries
+    "/E"                # Copy subdirectories including empty ones
+    "/COPY:DATSO"       # Copy everything except auditing info (avoids privilege issues)
+    "/R:3"              # Retry 3 times
+    "/W:2"              # Wait 2 seconds between retries
+    "/LOG:`"$LogPath`"" # Log file path
+    "/TEE"              # Output to console + log
 )
 
 Write-Verbose "Running Robocopy with arguments: $($robocopyArgs -join ' ')"
