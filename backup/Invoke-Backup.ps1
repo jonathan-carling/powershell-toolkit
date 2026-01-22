@@ -13,12 +13,18 @@
 .PARAMETER Destination
     The destination directory to copy to.
 
+.PARAMETER ExcludeFiles
+    One or more file names or patterns to exclude from the backup.
+
+.PARAMETER ExcludeDirs
+    One or more directory names or patterns to exclude from the backup.
+
 .PARAMETER LogPath
     Optional path to a log file. If not provided, a timestamped log file
     will be created in the user's TEMP directory.
 
 .EXAMPLE
-    ./Invoke-Backup.ps1 -Source "C:\Data" -Destination "D:\Backup"
+    ./Invoke-Backup.ps1 -Source "C:\Data" -Destination "D:\Backup" -ExcludeFiles "*.tmp"
 #>
 
 [CmdletBinding()]
@@ -29,7 +35,13 @@ param(
 
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string]$Destination
+    [string]$Destination,
+
+    [Parameter()]
+    [string[]]$ExcludeFiles,
+    
+    [Parameter()]
+    [string[]]$ExcludeDirs,
 
     [Parameter()]
     [string]$LogPath = "$(Join-Path $env:TEMP "Backup-$(Get-Date -Format yyyyMMdd_HHmmss).log")"
@@ -57,6 +69,22 @@ $robocopyArgs = @(
     "/LOG:`"$LogPath`"" # Log file path
     "/TEE"              # Output to console + log
 )
+
+# Add file exclusions
+if ($ExcludeFiles) {
+    foreach ($file in $ExcludeFiles) {
+        $robocopyArgs += "/XF"
+        $robocopyArgs += "`"$file`""
+    }
+}
+
+# Add directory exclusions
+if ($ExcludeDirs) {
+    foreach ($dir in $ExcludeDirs) {
+        $robocopyArgs += "/XD"
+        $robocopyArgs += "`"$dir`""
+    }
+}
 
 Write-Verbose "Running Robocopy with arguments: $($robocopyArgs -join ' ')"
 
