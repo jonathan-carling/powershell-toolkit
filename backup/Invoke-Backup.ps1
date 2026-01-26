@@ -37,6 +37,8 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$Destination,
 
+    [Parameter()] [switch]$Move,
+
     [Parameter()]
     [string[]]$ExcludeFiles,
     
