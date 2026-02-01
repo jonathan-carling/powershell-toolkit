@@ -13,6 +13,9 @@
 .PARAMETER Destination
     The destination directory to copy to.
 
+.PARAMETER Move
+    If specified, files and directories will be moved instead of copied.
+
 .PARAMETER ExcludeFiles
     One or more file names or patterns to exclude from the backup.
 
@@ -71,6 +74,17 @@ $robocopyArgs = @(
     "/LOG:`"$LogPath`"" # Log file path
     "/TEE"              # Output to console + log
 )
+
+# Add MOVE flag if requested
+if ($Move) {
+    $robocopyArgs += "/MOVE"  # Move files and directories
+}
+
+# Add MOVE flag if requested
+if ($Move) {
+    # /MOVE = move files + dirs (equivalent to /MOV + /MOVE)
+    $robocopyArgs += "/MOVE"
+}
 
 # Add file exclusions
 if ($ExcludeFiles) {
